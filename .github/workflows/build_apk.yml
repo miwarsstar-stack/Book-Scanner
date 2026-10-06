@@ -6,38 +6,46 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      # Holt deinen Code aus dem Repository
+      # 1. Holt den Code aus deinem Repository
       - uses: actions/checkout@v4
 
-      # Sichert deine main.dart im Hintergrund
-      - name: Backup main.dart
-        run: |
-          if [ -f main.dart ]; then mv main.dart temp_main.dart; fi
-          if [ -f lib/main.dart ]; then mv lib/main.dart temp_main.dart; fi
-
-      # Installiert Flutter (Aktuelle Version)
+      # 2. Installiert eine saubere Flutter-Umgebung
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # Erstellt die fehlenden Android-Projektdateien
-      - name: Generate missing project infrastructure
+      # 3. Erstellt ein brandneues, sauberes App-Gerüst in einem Unterordner
+      - name: Create Clean App Framework
         run: |
-          flutter create --platforms=android .
-          rm -f lib/main.dart
-          mv temp_main.dart lib/main.dart
+          flutter create --platforms=android --project-name=sell4more_scanner clean_app
+          
+          # Kopiert deine main.dart in das neue, saubere Projekt
+          if [ -f lib/main.dart ]; then
+            cp lib/main.dart clean_app/lib/main.dart
+          elif [ -f main.dart ]; then
+            cp main.dart clean_app/lib/main.dart
+          fi
+          
+          # Kopiert deine pubspec.yaml in das neue Projekt
+          if [ -f pubspec.yaml ]; then
+            cp pubspec.yaml clean_app/pubspec.yaml
+          fi
 
-      # Lädt die Programmbibliotheken herunter
+      # 4. Lädt die Bibliotheken im neuen Projektordner
       - name: Install Dependencies
-        run: flutter pub get
+        run: |
+          cd clean_app
+          flutter pub get
 
-      # Baut die fertige APK-Datei
+      # 5. Baut die fertige APK aus dem sauberen Ordner
       - name: Build APK
-        run: flutter build apk --release
+        run: |
+          cd clean_app
+          flutter build apk --release
 
-      # Stellt das fertige Paket mit der aktuellen v4-Version bereit
-      - name: Upload APK
+      # 6. Lädt die fertige APK als Download hoch (v4)
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: sell4more-app
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: clean_app/build/app/outputs/flutter-apk/app-release.apk
