@@ -4,14 +4,15 @@ on: [push, workflow_dispatch]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Wir pinnen das System fest auf Ubuntu 24.04, um Konflikte mit Ubuntu 26 zu vermeiden
+    runs-on: ubuntu-24.04
     steps:
       # 1. Quellcode aus dem Repository laden
       - uses: actions/checkout@v4
 
-      # 2. Java installieren (Zwingend notwendig für den Android-Build)
+      # 2. Modernes Java 17 installieren (v5 beendet die Node-Deprecation)
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'zulu'
           java-version: '17'
