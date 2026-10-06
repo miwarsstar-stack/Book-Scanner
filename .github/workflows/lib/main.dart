@@ -4,68 +4,93 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 
-void main() => runApp(MaterialApp(
-  theme: ThemeData.dark(), // Modernes Dark-Theme
-  home: Sell4MoreScanner(),
-));
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Sell4More Scanner',
+      theme: ThemeData.dark(),
+      home: const Sell4MoreScanner(),
+    );
+  }
+}
 
 class Sell4MoreScanner extends StatefulWidget {
+  const Sell4MoreScanner({super.key});
+
   @override
-  _Sell4MoreScannerState createState() => _Sell4MoreScannerState();
+  State<Sell4MoreScanner> createState() => _Sell4MoreScannerState();
 }
 
 class _Sell4MoreScannerState extends State<Sell4MoreScanner> {
   Uint8List? _processedImageBytes;
   bool _isLoading = false;
-  final _picker = ImagePicker();
+  final ImagePicker _picker = ImagePicker();
 
   Future<void> _fotografierenUndSenden() async {
-    final pickedFile = await _picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-    
-    if (pickedFile != null) {
-      setState(() {
-        _isLoading = true;
-        _processedImageBytes = null;
-      });
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+      );
       
-      _sendeBildAnBackend(File(pickedFile.path));
+      if (pickedFile != null) {
+        setState(() {
+          _isLoading = true;
+          _processedImageBytes = null;
+        });
+        await _sendeBildAnBackend(File(pickedFile.path));
+      }
+    } catch (e) {
+      _zeigeFehler("Kamera-Fehler: $e");
     }
   }
 
   Future<void> _sendeBildAnBackend(File imageFile) async {
-    // Tausche die IP-Adresse mit der Server-IP aus deinem Netzwerk oder Cloud aus
-    var url = Uri.parse('http://192.168.178.X:8000/scan-regal/'); 
-    var request = http.MultipartRequest('POST', url);
-    request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
-
+    // Tausche die IP-Adresse mit deiner echten Server-IP oder Cloud-URL aus
+    final Uri url = Uri.parse('http://192.168.178'); 
+    
     try {
-      var response = await request.send();
+      final http.MultipartRequest request = http.MultipartRequest('POST', url);
+      request.files.add(await http.MultipartFile.fromPath('file', imageFile.path));
+
+      final http.StreamedResponse response = await request.send();
       if (response.statusCode == 200) {
-        var bytes = await response.stream.toBytes();
+        final Uint8List bytes = await response.stream.toBytes();
         setState(() {
           _processedImageBytes = bytes;
           _isLoading = false;
         });
       } else {
-        _zeigeFehler("Server antwortete mit Fehlercode: ${response.statusCode}");
+        _zeigeFehler("Server-Fehler: Status ${response.statusCode}");
       }
     } catch (e) {
-      _zeigeFehler("Verbindung zum Sell4More-Backend fehlgeschlagen.");
+      _zeigeFehler("Keine Verbindung zum Server.");
     }
   }
 
   void _zeigeFehler(String text) {
     setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(text)),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Sell4More - Live Regal Scan')),
+      appBar: AppBar(title: const Text('Sell4More - Live Regal Scan')),
       body: Center(
         child: _isLoading
-            ? Column(
+            ? const Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   CircularProgressIndicator(color: Colors.green),
@@ -74,16 +99,16 @@ class _Sell4MoreScannerState extends State<Sell4MoreScanner> {
                 ],
               )
             : _processedImageBytes != null
-                ? InteractiveViewer( // Ermöglicht dem Nutzer in das fertige Bild hineinzuzoomen
+                ? InteractiveViewer(
                     maxScale: 5.0,
                     child: Image.memory(_processedImageBytes!),
                   )
-                : Text('Mache ein Foto deines Bücherregals, um Preise zu sehen.', style: TextStyle(fontSize: 16)),
+                : const Text('Mache ein Foto deines Bücherregals, um Preise zu sehen.', style: TextStyle(fontSize: 16)),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _fotografierenUndSenden,
-        label: Text('Regal Scannen'),
-        icon: Icon(Icons.camera_alt),
+        label: const Text('Regal Scannen'),
+        icon: const Icon(Icons.camera_alt),
         backgroundColor: Colors.green,
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
