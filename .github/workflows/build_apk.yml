@@ -7,11 +7,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Prepare Flutter Project Structure
+        run: |
+          mkdir -p lib
+          if [ -f main.dart ]; then mv main.dart lib/main.dart; fi
+
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
-      - run: flutter pub get
-      - run: flutter build apk --release
+          
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build APK
+        run: flutter build apk --release
+
       - name: Upload APK
         uses: actions/upload-artifact@v3
         with:
