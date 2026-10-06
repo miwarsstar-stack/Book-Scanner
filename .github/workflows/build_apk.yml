@@ -6,37 +6,38 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      # Holt deinen Code aus dem Repository
+      - uses: actions/checkout@v4
 
-      # 1. Schritt: Verzeichnisse aufräumen und main.dart sichern
+      # Sichert deine main.dart im Hintergrund
       - name: Backup main.dart
         run: |
           if [ -f main.dart ]; then mv main.dart temp_main.dart; fi
           if [ -f lib/main.dart ]; then mv lib/main.dart temp_main.dart; fi
 
-      # 2. Schritt: Flutter installieren
+      # Installiert Flutter (Aktuelle Version)
       - uses: subosito/flutter-action@v2
         with:
           channel: 'stable'
 
-      # 3. Schritt: Vollständiges Android-Projektgerüst automatisch erstellen lassen
+      # Erstellt die fehlenden Android-Projektdateien
       - name: Generate missing project infrastructure
         run: |
           flutter create --platforms=android .
           rm -f lib/main.dart
           mv temp_main.dart lib/main.dart
 
-      # 4. Schritt: Abhängigkeiten laden
+      # Lädt die Programmbibliotheken herunter
       - name: Install Dependencies
         run: flutter pub get
 
-      # 5. Schritt: Die fertige APK bauen
+      # Baut die fertige APK-Datei
       - name: Build APK
         run: flutter build apk --release
 
-      # 6. Schritt: APK als Download bereitstellen
+      # Stellt das fertige Paket mit der aktuellen v4-Version bereit
       - name: Upload APK
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: sell4more-app
           path: build/app/outputs/flutter-apk/app-release.apk
